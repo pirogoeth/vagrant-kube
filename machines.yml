@@ -35,6 +35,8 @@
         :name: bootstrap-external-etcd
         :options:
           :path: scripts/etcd-bootstrap.sh
+          :env:
+            GO_VERSION: "1.7.3"
 
   kube-master:
     :provisioners:

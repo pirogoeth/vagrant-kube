@@ -6,7 +6,10 @@
 # More simplistic wrapper around Vagrant.
 
 require 'pp'
+require 'vagrant/ui'
 require 'yaml'
+
+UI = Vagrant::UI::Colored.new
 
 debug_mode = ENV['VRAP_DEBUG'] || false
 test_mode = ENV['VRAP_TEST'] || false
@@ -42,7 +45,7 @@ machines.each do |machine|
   # to actually work!
   machine[:groups].each do |group_name|
     if !groups.include? group_name then
-      puts " [!] Unknown group '#{group_name}' inherited by machine '#{machine[:name]}'"
+      UI.error " [!] Unknown group '#{group_name}' inherited by machine '#{machine[:name]}'"
       next
     end
 
@@ -56,7 +59,7 @@ machines.each do |machine|
           when Array
             machine[k].concat v
           else
-            puts "I don't know how to merge #{v.class} and #{machine[k].class}"
+            UI.warn "I don't know how to merge #{v.class} and #{machine[k].class}"
             next
           end
         else
@@ -70,7 +73,7 @@ machines.each do |machine|
 
   # Check ignore flag here so it can be propagated from groups
   if machine[:ignore] then
-    puts "Skipping machine `#{machine[:name]}`"
+    UI.info "Skipping machine `#{machine[:name]}`"
     next
   end
 
@@ -83,7 +86,7 @@ machines.each do |machine|
 end
 
 if test_mode then
-  puts "vrapper is in test mode -- exiting!"
+  UI.success "vrapper is in test mode -- exiting!"
   exit 0
 end
 
