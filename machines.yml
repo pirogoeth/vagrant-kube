@@ -7,7 +7,7 @@
     :enabled: true
     :manage_host: true
     :manage_guest: true
-    :ignore_private_ip: false
+    :ignore_private_ip: true
     :include_offline: false
 
 :groups:
@@ -16,8 +16,9 @@
     :vm:
       :box: failfish/centos72
     :networks:
-      - :network_type: private_network
-        :type: dhcp
+      - :network_type: public_network
+        :type: bridge
+        :dev: enp4s0f1
 
   kubernetes:
     :provisioners:
@@ -31,15 +32,16 @@
         :name: bootstrap-kubeadm
         :options:
           :path: scripts/kubernetes-bootstrap.sh
+
+  kube-master:
+    :provisioners:
       - :engine: :shell
         :name: bootstrap-external-etcd
         :options:
           :path: scripts/etcd-bootstrap.sh
           :env:
             GO_VERSION: "1.7.3"
-
-  kube-master:
-    :provisioners:
+            ETCD_ROLE: "master"
       - :engine: :shell
         :name: launch-kube-controller
         :options:
@@ -53,6 +55,13 @@
 
   kubelet:
     :provisioners:
+      - :engine: :shell
+        :name: bootstrap-external-etcd
+        :options:
+          :path: scripts/etcd-bootstrap.sh
+          :env:
+            GO_VERSION: "1.7.3"
+            ETCD_ROLE: "user"
       - :engine: :shell
         :name: launch-kubelet
         :options:

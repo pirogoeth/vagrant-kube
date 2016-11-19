@@ -28,12 +28,16 @@ systemctl stop kubelet
 echo " [+] Adding user 'vagrant' to Docker group"
 usermod -a -G dockerroot vagrant
 
-echo " [+] Changing Docker storage settings"
+echo " [+] Changing Docker settings"
+sed -e "s/OPTIONS='\(.\+\)'/OPTIONS='\1 --group=dockerroot'/g" /etc/sysconfig/docker > /etc/sysconfig/docker
 echo 'DOCKER_STORAGE_OPTIONS="--storage-driver=overlay"' > /etc/sysconfig/docker-storage
 
 echo " [+] Enable bridge-nf-{ip,ip6}tables"
-echo "net.bridge.bridge-nf-call-ip6tables=1" >> /etc/sysctl.conf
-echo "net.bridge.bridge-nf-call-iptables=1" >> /etc/sysctl.conf
+[[ -z "$(grep 'net.bridge.bridge-nf-call-ip6tables' /etc/sysctl.conf)" ]] && echo "net.bridge.bridge-nf-call-ip6tables=1" >> /etc/sysctl.conf
+[[ -z "$(grep 'net.bridge.bridge-nf-call-iptables' /etc/sysctl.conf)" ]] && echo "net.bridge.bridge-nf-call-iptables=1" >> /etc/sysctl.conf
+
+echo " [!] Reloading sysctl.conf"
+sysctl -p
 
 echo " [+] Resetting Kubernetes data directories"
 kubeadm reset

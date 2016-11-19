@@ -13,5 +13,5 @@ sudo chmod +x /usr/bin/gimme
 
 hash -r
 
-echo "Pre-installing Go version ${GIMME_GO_VERSION}"
+echo " [+] Pre-installing Go version ${GIMME_GO_VERSION}"
 eval "$(gimme)"
