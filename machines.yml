@@ -1,0 +1,89 @@
+# vim: set ai et ts=2 sts=2 sw=2 syntax=yaml:
+
+---
+:config:
+
+  hostmanager:
+    :enabled: true
+    :manage_host: true
+    :manage_guest: true
+    :ignore_private_ip: false
+    :include_offline: false
+
+:groups:
+
+  base:
+    :vm:
+      :box: failfish/centos72
+    :networks:
+      - :network_type: private_network
+        :type: dhcp
+
+  kubernetes:
+    :provisioners:
+      - :engine: :shell
+        :name: bootstrap-godev
+        :options:
+          :path: scripts/gimme-install.sh
+          :env:
+            GO_VERSION: "1.7.3"
+      - :engine: :shell
+        :name: bootstrap-kubeadm
+        :options:
+          :path: scripts/kubernetes-bootstrap.sh
+      - :engine: :shell
+        :name: bootstrap-external-etcd
+        :options:
+          :path: scripts/etcd-bootstrap.sh
+
+  kube-master:
+    :provisioners:
+      - :engine: :shell
+        :name: launch-kube-controller
+        :options:
+          :path: scripts/kube-control-launch.sh
+    :providers:
+      - :engine: libvirt
+        :options:
+          :uri: "qemu+unix:///system"
+          :cpu_model: kvm64
+          :memory: 1024
+
+  kubelet:
+    :provisioners:
+      - :engine: :shell
+        :name: launch-kubelet
+        :options:
+          :path: scripts/kubelet-launch.sh
+    :providers:
+      - :engine: libvirt
+        :options:
+          :uri: "qemu+unix:///system"
+          :cpu_model: kvm64
+          :memory: 4096
+
+:machines:
+
+  - :name: kube-master
+    :vm:
+      :hostname: master.kube.dev
+    :groups:
+      - base
+      - kubernetes
+      - kube-master
+
+  - :name: kube-n01
+    :vm:
+      :hostname: n01.kube.dev
+    :groups:
+      - base
+      - kubernetes
+      - kubelet
+
+  - :name: kube-n02
+    :vm:
+      :hostname: n02.kube.dev
+    :groups:
+      - base
+      - kubernetes
+      - kubelet
