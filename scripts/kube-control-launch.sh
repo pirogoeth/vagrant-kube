@@ -18,7 +18,7 @@ fi
 
 cluster_creds="$(cat ${outfile} | tail -n 1)"
 cluster_token="$(echo -e ${cluster_creds} | awk '{ split($3, a, "="); print a[2]; }')"
-cluster_master="$(echo -e ${cluster_creds} | awk '{ print $4 }')"
+cluster_master="$(hostname -i)"
 
 echo " [+] Cluster token is ${cluster_token}"
 echo " [+] Cluster master is at ${cluster_master} -- is this me? ($(hostname -f))"

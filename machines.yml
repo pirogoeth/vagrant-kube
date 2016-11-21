@@ -15,10 +15,13 @@
   base:
     :vm:
       :box: failfish/centos72
-    :networks:
-      - :network_type: public_network
-        :type: bridge
-        :dev: enp4s0f1
+    :provisioners:
+      - :engine: :hostmanager
+        :name: cluster-hosts
+      - :engine: :shell
+        :name: rewrite-hosts
+        :options:
+          :path: scripts/rewrite-hosts.sh
 
   kubernetes:
     :provisioners:
@@ -52,6 +55,7 @@
           :uri: "qemu+unix:///system"
           :cpu_model: kvm64
           :memory: 1024
+          :management_network_mode: route
 
   kubelet:
     :provisioners:
@@ -72,12 +76,18 @@
           :uri: "qemu+unix:///system"
           :cpu_model: kvm64
           :memory: 4096
+          :management_network_mode: route
 
 :machines:
 
   - :name: kube-master
     :vm:
       :hostname: master.kube.dev
+    :networks:
+      - :network_type: public_network
+        :ip: 10.0.1.50
+        :mode: bridge
+        :dev: enp4s0f1
     :groups:
       - base
       - kubernetes
@@ -86,6 +96,11 @@
   - :name: kube-n01
     :vm:
       :hostname: n01.kube.dev
+    :networks:
+      - :network_type: public_network
+        :ip: 10.0.1.51
+        :mode: bridge
+        :dev: enp4s0f1
     :groups:
       - base
       - kubernetes
@@ -94,6 +109,11 @@
   - :name: kube-n02
     :vm:
       :hostname: n02.kube.dev
+    :networks:
+      - :network_type: public_network
+        :ip: 10.0.1.52
+        :mode: bridge
+        :dev: enp4s0f1
     :groups:
       - base
       - kubernetes

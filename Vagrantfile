@@ -11,6 +11,15 @@ require 'yaml'
 
 UI = Vagrant::UI::Colored.new
 
+begin
+  require_relative 'callback.rb'
+rescue LoadError
+  raise
+  get_callbacks = Proc.new { Hash.new }
+end
+
+callbacks = get_callbacks()
+
 debug_mode = ENV['VRAP_DEBUG'] || false
 test_mode = ENV['VRAP_TEST'] || false
 desc_file = ENV['DESCRIBE_FILE'] || 'machines.yml'
@@ -174,6 +183,12 @@ Vagrant.configure("2") do |config|
           end
         end
       end
+
+      # Machine callback
+      callbacks[:machine].call(m)
     end
   end
+
+  # Config callback
+  callbacks[:config].call(config)
 end
