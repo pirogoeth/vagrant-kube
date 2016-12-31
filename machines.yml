@@ -12,9 +12,18 @@
 
 :groups:
 
-  base:
+  base-vm:
     :vm:
       :box: failfish/centos72
+
+  base-shares:
+    :synced_folders:
+      - :src: .
+        :dst: /vagrant
+        :options:
+          :disabled: true
+
+  base-provision:
     :provisioners:
       - :engine: :hostmanager
         :name: cluster-hosts
@@ -22,6 +31,12 @@
         :name: rewrite-hosts
         :options:
           :path: scripts/rewrite-hosts.sh
+
+  machine-base:
+    :from:
+      - base-vm
+      - base-provision
+      - base-shares
 
   kubernetes:
     :provisioners:
@@ -37,6 +52,7 @@
           :path: scripts/kubernetes-bootstrap.sh
 
   kube-master:
+    :from: kubernetes
     :provisioners:
       - :engine: :shell
         :name: bootstrap-external-etcd
@@ -54,10 +70,12 @@
         :options:
           :uri: "qemu+unix:///system"
           :cpu_model: kvm64
+          :cpus: 1
           :memory: 1024
-          :management_network_mode: route
+          :management_network_mode: nat
 
   kubelet:
+    :from: kubernetes
     :provisioners:
       - :engine: :shell
         :name: bootstrap-external-etcd
@@ -75,46 +93,41 @@
         :options:
           :uri: "qemu+unix:///system"
           :cpu_model: kvm64
+          :cpus: 2
           :memory: 4096
-          :management_network_mode: route
+          :management_network_mode: nat
 
 :machines:
 
   - :name: kube-master
+    :options:
+      :autostart: true
     :vm:
-      :hostname: master.kube.dev
+      :hostname: master.kube.local
     :networks:
-      - :network_type: public_network
-        :ip: 10.0.1.50
-        :mode: bridge
-        :dev: enp4s0f1
+      - :network_type: forwarded_port
+        :guest: 8080
+        :guest_ip: 127.0.0.1
+        :host: 8080
+        :adapter: lo
     :groups:
-      - base
-      - kubernetes
+      - machine-base
       - kube-master
 
   - :name: kube-n01
+    :options:
+      :autostart: false
     :vm:
-      :hostname: n01.kube.dev
-    :networks:
-      - :network_type: public_network
-        :ip: 10.0.1.51
-        :mode: bridge
-        :dev: enp4s0f1
+      :hostname: n01.kube.local
     :groups:
-      - base
-      - kubernetes
+      - machine-base
       - kubelet
 
   - :name: kube-n02
+    :options:
+      :autostart: false
     :vm:
-      :hostname: n02.kube.dev
-    :networks:
-      - :network_type: public_network
-        :ip: 10.0.1.52
-        :mode: bridge
-        :dev: enp4s0f1
+      :hostname: n02.kube.local
     :groups:
-      - base
-      - kubernetes
+      - machine-base
       - kubelet

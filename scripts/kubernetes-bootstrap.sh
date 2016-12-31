@@ -18,6 +18,9 @@ EOF
 echo " [+] Disabling SELinux enforcement"
 [[ "$(getenforce)" != "Disabled" ]] && setenforce 0
 
+echo " [+] Disable Firewalld"
+systemctl disable firewalld && systemctl stop firewalld
+
 echo " [+] Installing Kubernetes & Docker"
 yum install -y docker kubelet kubeadm kubectl kubernetes-cni
 
@@ -39,9 +42,9 @@ echo " [+] Enable bridge-nf-{ip,ip6}tables"
 echo " [!] Reloading sysctl.conf"
 sysctl -p
 
-echo " [+] Resetting Kubernetes data directories"
+echo " [!] Resetting Kubernetes data directories"
 kubeadm reset
 
-echo " [+] Launching Kubelet and Docker"
+echo " [!] Launching Kubelet and Docker"
 systemctl enable docker && systemctl start docker
 systemctl enable kubelet && systemctl start kubelet

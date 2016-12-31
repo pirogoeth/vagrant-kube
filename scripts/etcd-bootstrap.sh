@@ -9,7 +9,7 @@ export ETCD_CONTAINER=${ETCD_NAME:-'etcd_ext'}
 export ROLE=${ETCD_ROLE:-'user'}
 
 etcdctl="/var/go/bin/etcdctl --no-sync"
-etcd_endpoint="http://master.kube.dev:9301"
+etcd_endpoint="http://master.kube.local:9301"
 
 [[ ! -d "${GOPATH}" ]] && mkdir -p /var/gopath
 

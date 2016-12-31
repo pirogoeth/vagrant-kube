@@ -5,7 +5,7 @@ set -e
 
 outfile=`mktemp /tmp/kubeadm-XXXXXX`
 etcdctl="/var/go/bin/etcdctl --no-sync"
-etcd_endpoint="http://master.kube.dev:9301"
+etcd_endpoint="http://master.kube.local:9301"
 
 echo " [+] Initializing Kubernetes master"
 sudo kubeadm init 2>&1 1>${outfile}
@@ -30,3 +30,6 @@ ${etcdctl} --endpoint ${etcd_endpoint} set /cluster/token ${cluster_token}
 
 echo " [+] Installing Weave net"
 kubectl apply -f https://git.io/weave-kube
+
+echo " [+] Installing k8s dashboard"
+kubectl create -f https://rawgit.com/kubernetes/dashboard/master/src/deploy/kubernetes-dashboard.yaml

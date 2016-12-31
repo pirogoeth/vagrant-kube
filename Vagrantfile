@@ -11,11 +11,13 @@ require 'yaml'
 
 UI = Vagrant::UI::Colored.new
 
+def get_callbacks
+  Hash.new
+end
+
 begin
   require_relative 'callback.rb'
 rescue LoadError
-  raise
-  get_callbacks = Proc.new { Hash.new }
 end
 
 callbacks = get_callbacks()
@@ -23,6 +25,9 @@ callbacks = get_callbacks()
 debug_mode = ENV['VRAP_DEBUG'] || false
 test_mode = ENV['VRAP_TEST'] || false
 desc_file = ENV['DESCRIBE_FILE'] || 'machines.yml'
+
+p "REGISTERED CALLBACKS" unless not debug_mode
+PP.pp(callbacks) unless not debug_mode
 
 desc = YAML::load_file(desc_file)
 
@@ -45,6 +50,66 @@ end
 def set_property(obj, key, value)
   obj.send("#{key}=", value)
 end
+
+def resolve_group_bases(groups)
+  res_order = {}
+  final = {}
+  groups.each do |name, data|
+    # Perform hash merges for groups -- allows group inheritance.
+    #
+    # This has a problem of resolution order. Obviously groups
+    # without any `:from` should be "resolved" / defined first.
+    if not (data || {}).include? :from then
+      res_order[name] = nil
+      final[name] = data
+      next
+    end
+
+    case data[:from]
+    when String
+      res_order[name] = [data[:from]]
+    when Array
+      res_order[name] = data[:from]
+    end
+
+    data.delete :from
+  end
+
+  res_order.each do |group, inherit|
+    group_data = groups[group]
+    (inherit || []).each do |base|
+      if final.include? base
+        # Merge the final group into this group's data
+        (final[base] || {}).each do |k, v|
+          if group_data[k] != nil then
+            if group_data[k].is_a? v.class then
+              case v
+              when Hash
+                group_data[k].merge! v.clone
+              when Array
+                group_data[k] = v.clone.concat group_data[k]
+              else
+                UI.warn "I don't know how to merge #{v.class} and #{group_data[k].class}"
+                next
+              end
+            else
+              next
+            end
+          else
+            group_data[k] = v.clone
+          end
+        end
+      end
+    end
+    final[group] = group_data
+  end
+
+  return final
+end
+
+groups = resolve_group_bases(groups)
+p "RESOLVED GROUPS INHERITANCE" unless not debug_mode
+PP.pp(groups) unless not debug_mode
 
 machines_define = []
 machines.each do |machine|
@@ -89,10 +154,11 @@ machines.each do |machine|
   # Add the newly merged machine back in to the machines list
   machine.delete :groups
   machines_define.push machine
-
-  # Debug print :)
-  PP.pp(machine) unless not debug_mode
 end
+
+# Debug print :)
+p "APPLIED GROUPS TO MACHINES" unless not debug_mode
+PP.pp(machines_define) unless not debug_mode
 
 if test_mode then
   UI.success "vrapper is in test mode -- exiting!"
@@ -113,8 +179,10 @@ Vagrant.configure("2") do |config|
   end
 
   machines_define.each do |machine|
-    config.vm.define machine[:name] do |m|
+    machine_opts = (machine[:options] || {})
+    config.vm.define machine[:name], **machine_opts do |m|
       machine.delete :name
+      machine.delete :options
 
       # Set the attributes on the VM config object.
       # These are the main settings for each VM, such as
@@ -167,6 +235,15 @@ Vagrant.configure("2") do |config|
         end
       end
       machine.delete :provisioners
+
+      # Apply synced_folders setting
+      (machine[:synced_folders] || []).each do |folder|
+        folder_src = folder[:src]
+        folder_dst = folder[:dst]
+        folder_opts = (folder[:options] || {})
+        m.vm.synced_folder folder_src, folder_dst, **folder_opts
+      end
+      machine.delete :synced_folders
 
       # Debug print :)
       PP.pp(m.vm) unless not debug_mode

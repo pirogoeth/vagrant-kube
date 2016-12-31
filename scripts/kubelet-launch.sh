@@ -4,7 +4,7 @@
 set -e
 
 etcdctl="/var/go/bin/etcdctl --no-sync"
-etcd_endpoint="http://master.kube.dev:9301"
+etcd_endpoint="http://master.kube.local:9301"
 
 echo " [+] Fetching cluster information from etcd"
 cluster_token=$(${etcdctl} --endpoint ${etcd_endpoint} get /cluster/token)
@@ -16,10 +16,10 @@ if [[ -d "/etc/kubernetes" ]] ; then
     sudo rm -rf /etc/kubernetes
 fi
 
-echo " [+] Launching kubelet.service"
+echo " [!] Launching kubelet.service"
 sudo systemctl start kubelet.service
 
-echo " [+] Connection to cluster master! (addr: ${cluster_master}, token: ${cluster_token})"
+echo " [+] Connecting to cluster master! (addr: ${cluster_master}, token: ${cluster_token})"
 sudo kubeadm join --token ${cluster_token} ${cluster_master}
 
 exit 0
